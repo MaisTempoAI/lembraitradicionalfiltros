@@ -31,6 +31,34 @@ export default function Dashboard() {
   const [dateFrom, setDateFrom] = useState<Date | undefined>();
   const [dateTo, setDateTo] = useState<Date | undefined>();
   const [popoverOpen, setPopoverOpen] = useState(false);
+  const [importingPdf, setImportingPdf] = useState(false);
+  const pdfInputRef = useRef<HTMLInputElement>(null);
+  const navigate = useNavigate();
+
+  const handlePdfImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.type !== 'application/pdf') {
+      toast.error('Selecione um arquivo PDF.');
+      return;
+    }
+    setImportingPdf(true);
+    try {
+      const clientes = await parsePdfVendas(file);
+      if (clientes.length === 0) {
+        toast.error('Nenhum cliente encontrado no PDF.');
+        return;
+      }
+      toast.success(`${clientes.length} clientes encontrados!`);
+      navigate('/importar-pdf', { state: { clientes } });
+    } catch (err) {
+      toast.error('Erro ao processar PDF.');
+      console.error(err);
+    } finally {
+      setImportingPdf(false);
+      e.target.value = '';
+    }
+  };
 
   const { data: allLembretes = [], isLoading: allLoading } = useAllLembretes();
   const { data: aguardando = [], isLoading: aguardandoLoading } = useLembretes(['aguardando']);

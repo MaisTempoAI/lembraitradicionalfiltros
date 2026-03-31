@@ -12,12 +12,20 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { ArrowLeft, Loader2, AlertTriangle, Phone, User, Package, CheckSquare, Square, Send, UserPlus } from 'lucide-react';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 import type { ClientePdf } from '@/lib/pdf-parser';
 
 const HORARIOS_FIXOS = ['10:10', '13:13', '17:17'];
 const MAX_POR_HORARIO = 10;
+
+function formatarDataBR(iso: string): string {
+  const [y, m, d] = iso.split('-');
+  return `${d}/${m}/${y}`;
+}
 
 /** Gera a agenda de envio distribuída: max 10 por slot, avança horários/dias */
 function gerarAgendaDistribuida(total: number, dataBase: string): { data: string; hora: string }[] {
@@ -25,21 +33,17 @@ function gerarAgendaDistribuida(total: number, dataBase: string): { data: string
   const hojeStr = now.toISOString().split('T')[0];
   const horaAtual = now.getHours() * 60 + now.getMinutes();
 
-  // Parse horários em minutos
   const horariosMin = HORARIOS_FIXOS.map(h => {
     const [hh, mm] = h.split(':').map(Number);
     return hh * 60 + mm;
   });
 
-  // Encontrar primeiro slot disponível
   let diaOffset = 0;
   let slotIndex = 0;
 
-  // Se é hoje, pular horários que já passaram
   if (dataBase === hojeStr) {
     const primeiroFuturo = horariosMin.findIndex(m => m > horaAtual);
     if (primeiroFuturo === -1) {
-      // Todos os horários de hoje já passaram, começar amanhã
       diaOffset = 1;
       slotIndex = 0;
     } else {
@@ -55,10 +59,7 @@ function gerarAgendaDistribuida(total: number, dataBase: string): { data: string
     dataEnvio.setDate(dataEnvio.getDate() + diaOffset);
     const dataStr = dataEnvio.toISOString().split('T')[0];
 
-    agenda.push({
-      data: dataStr,
-      hora: HORARIOS_FIXOS[slotIndex],
-    });
+    agenda.push({ data: dataStr, hora: HORARIOS_FIXOS[slotIndex] });
 
     contadorNoSlot++;
     if (contadorNoSlot >= MAX_POR_HORARIO) {
@@ -74,6 +75,8 @@ function gerarAgendaDistribuida(total: number, dataBase: string): { data: string
   return agenda;
 }
 
+type SlotResumo = { data: string; hora: string; count: number; startIndex: number };
+
 export default function ImportPdfPage() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -87,11 +90,15 @@ export default function ImportPdfPage() {
   const [categoriaId, setCategoriaId] = useState('');
   const [mensagemTemplate, setMensagemTemplate] = useState('');
   const [dataContato, setDataContato] = useState(new Date().toISOString().split('T')[0]);
-  const [intervaloDias, setIntervaloDias] = useState(0);
+  const [intervaloDias] = useState(0);
   const [criando, setCriando] = useState(false);
   const [progress, setProgress] = useState(0);
   const [importandoContatos, setImportandoContatos] = useState(false);
   const [contatosImportados, setContatosImportados] = useState(0);
+  const [contatosExistentes, setContatosExistentes] = useState(0);
+
+  // Editable agenda overrides: slotIndex -> {data, hora}
+  const [agendaOverrides, setAgendaOverrides] = useState<Map<number, { data: string; hora: string }>>(new Map());
 
   // Auto-select REFIL category if it exists
   useEffect(() => {
@@ -145,24 +152,60 @@ export default function ImportPdfPage() {
 
   const gerarMensagem = (cliente: ClientePdf) => {
     let msg = mensagemTemplate || 'Olá [NOME], seu [ITEM] está na hora de trocar!';
-    msg = msg.replace(/\[NOME\]/gi, cliente.nome.trim());
+    const primeiroNome = cliente.nome.trim().split(' ')[0];
+    msg = msg.replace(/\[NOME\]/gi, primeiroNome);
     msg = msg.replace(/\[ITEM\]/gi, cliente.itens.join(', '));
     return msg;
   };
 
   // Agenda preview
   const clientesValidos = useMemo(() => selecionados.filter(c => c.telefone.length >= 10), [selecionados]);
-  const agenda = useMemo(() => gerarAgendaDistribuida(clientesValidos.length, dataContato), [clientesValidos.length, dataContato]);
+  const agendaBase = useMemo(() => gerarAgendaDistribuida(clientesValidos.length, dataContato), [clientesValidos.length, dataContato]);
 
-  // Summary of schedule distribution
-  const agendaResumo = useMemo(() => {
-    const map = new Map<string, number>();
-    agenda.forEach(a => {
-      const key = `${a.data} às ${a.hora}`;
-      map.set(key, (map.get(key) || 0) + 1);
+  // Build resumo from base agenda, then apply overrides
+  const agendaResumoEditavel = useMemo<SlotResumo[]>(() => {
+    const slots: SlotResumo[] = [];
+    let currentKey = '';
+    for (let i = 0; i < agendaBase.length; i++) {
+      const key = `${agendaBase[i].data}|${agendaBase[i].hora}`;
+      if (key !== currentKey) {
+        slots.push({ data: agendaBase[i].data, hora: agendaBase[i].hora, count: 1, startIndex: i });
+        currentKey = key;
+      } else {
+        slots[slots.length - 1].count++;
+      }
+    }
+    // Apply overrides
+    return slots.map((slot, idx) => {
+      const override = agendaOverrides.get(idx);
+      if (override) return { ...slot, data: override.data, hora: override.hora };
+      return slot;
     });
-    return Array.from(map.entries()).map(([slot, count]) => ({ slot, count }));
-  }, [agenda]);
+  }, [agendaBase, agendaOverrides]);
+
+  // Build final agenda from editable resumo
+  const agendaFinal = useMemo(() => {
+    const result: { data: string; hora: string }[] = [];
+    for (const slot of agendaResumoEditavel) {
+      for (let i = 0; i < slot.count; i++) {
+        result.push({ data: slot.data, hora: slot.hora });
+      }
+    }
+    return result;
+  }, [agendaResumoEditavel]);
+
+  // Reset overrides when base changes
+  useEffect(() => {
+    setAgendaOverrides(new Map());
+  }, [clientesValidos.length, dataContato]);
+
+  const updateSlot = (slotIndex: number, newData: string, newHora: string) => {
+    setAgendaOverrides(prev => {
+      const next = new Map(prev);
+      next.set(slotIndex, { data: newData, hora: newHora });
+      return next;
+    });
+  };
 
   const handleImportarContatos = async () => {
     if (!user) return;
@@ -174,8 +217,22 @@ export default function ImportPdfPage() {
 
     setImportandoContatos(true);
     let importados = 0;
+    let existentes = 0;
     try {
-      for (const cliente of comTelefone) {
+      const phones = comTelefone.map(c => c.telefone);
+      const { data: existing } = await supabase
+        .from('lembrai_lembretes')
+        .select('whatsapp')
+        .eq('usuario_id', user.id)
+        .eq('status', 'contato')
+        .in('whatsapp', phones);
+
+      const existingSet = new Set((existing || []).map(e => e.whatsapp));
+      existentes = existingSet.size;
+
+      const novos = comTelefone.filter(c => !existingSet.has(c.telefone));
+
+      for (const cliente of novos) {
         await supabase.from('lembrai_lembretes').insert({
           usuario_id: user.id,
           nome: cliente.nome,
@@ -191,7 +248,13 @@ export default function ImportPdfPage() {
         importados++;
       }
       setContatosImportados(importados);
-      toast.success(`${importados} contatos importados com sucesso!`);
+      setContatosExistentes(existentes);
+      if (importados > 0) {
+        toast.success(`${importados} contatos importados com sucesso!`);
+      }
+      if (existentes > 0) {
+        toast.info(`${existentes} contatos já existiam.`);
+      }
     } catch {
       toast.error('Erro ao importar contatos.');
     } finally {
@@ -218,7 +281,7 @@ export default function ImportPdfPage() {
       for (let i = 0; i < clientesValidos.length; i++) {
         const cliente = clientesValidos[i];
         const msgFinal = gerarMensagem(cliente);
-        const slot = agenda[i];
+        const slot = agendaFinal[i];
 
         await createLembrete.mutateAsync({
           nome: cliente.nome,
@@ -281,9 +344,10 @@ export default function ImportPdfPage() {
                 <><UserPlus className="h-4 w-4" /> Importar Contatos ({clientesComTelefone.length})</>
               )}
             </Button>
-            {contatosImportados > 0 && (
+            {(contatosImportados > 0 || contatosExistentes > 0) && (
               <Badge variant="secondary" className="text-xs">
-                ✓ {contatosImportados} contatos importados
+                {contatosImportados > 0 && `✓ ${contatosImportados} contatos importados`}
+                {contatosExistentes > 0 && ` · ♥ ${contatosExistentes} já existiam`}
               </Badge>
             )}
           </div>
@@ -334,15 +398,17 @@ export default function ImportPdfPage() {
             />
           </div>
 
-          {/* Schedule preview */}
-          {agendaResumo.length > 0 && (
+          {/* Schedule preview - editable */}
+          {agendaResumoEditavel.length > 0 && (
             <div className="space-y-1.5">
-              <Label>Distribuição de Envios</Label>
+              <Label>Distribuição de Envios <span className="text-muted-foreground font-normal">(clique para editar)</span></Label>
               <div className="flex flex-wrap gap-2">
-                {agendaResumo.map(({ slot, count }) => (
-                  <Badge key={slot} variant="outline" className="text-xs gap-1">
-                    📅 {slot} — {count} envio{count > 1 ? 's' : ''}
-                  </Badge>
+                {agendaResumoEditavel.map((slot, idx) => (
+                  <SlotBadge
+                    key={`${idx}-${slot.data}-${slot.hora}`}
+                    slot={slot}
+                    onUpdate={(data, hora) => updateSlot(idx, data, hora)}
+                  />
                 ))}
               </div>
             </div>
@@ -433,7 +499,7 @@ export default function ImportPdfPage() {
           )}
           <div className="flex items-center justify-between">
             <p className="text-sm text-muted-foreground">
-              {clientesValidos.length} lembretes serão criados (distribuídos em {agendaResumo.length} slot{agendaResumo.length > 1 ? 's' : ''})
+              {clientesValidos.length} lembretes serão criados (distribuídos em {agendaResumoEditavel.length} slot{agendaResumoEditavel.length > 1 ? 's' : ''})
             </p>
             <Button
               onClick={handleSubmit}
@@ -451,5 +517,67 @@ export default function ImportPdfPage() {
         </div>
       </div>
     </Layout>
+  );
+}
+
+/** Slot badge with popover to edit date + time */
+function SlotBadge({ slot, onUpdate }: { slot: SlotResumo; onUpdate: (data: string, hora: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(() => {
+    const [y, m, d] = slot.data.split('-').map(Number);
+    return new Date(y, m - 1, d);
+  });
+  const [selectedHora, setSelectedHora] = useState(slot.hora);
+
+  const handleDateSelect = (date: Date | undefined) => {
+    if (!date) return;
+    setSelectedDate(date);
+    const iso = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+    onUpdate(iso, selectedHora);
+  };
+
+  const handleHoraSelect = (hora: string) => {
+    setSelectedHora(hora);
+    if (selectedDate) {
+      const iso = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate.getDate()).padStart(2, '0')}`;
+      onUpdate(iso, hora);
+    }
+  };
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors hover:bg-accent hover:text-accent-foreground cursor-pointer gap-1">
+          📅 {formatarDataBR(slot.data)} às {slot.hora} — {slot.count} envio{slot.count > 1 ? 's' : ''}
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-3" align="start">
+        <div className="space-y-3">
+          <Calendar
+            mode="single"
+            selected={selectedDate}
+            onSelect={handleDateSelect}
+            initialFocus
+            className={cn("p-0 pointer-events-auto")}
+          />
+          <div className="space-y-1.5">
+            <Label className="text-xs">Horário</Label>
+            <div className="flex gap-1.5">
+              {HORARIOS_FIXOS.map(h => (
+                <Button
+                  key={h}
+                  size="sm"
+                  variant={selectedHora === h ? 'default' : 'outline'}
+                  className="text-xs h-7 px-2"
+                  onClick={() => handleHoraSelect(h)}
+                >
+                  {h}
+                </Button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </PopoverContent>
+    </Popover>
   );
 }

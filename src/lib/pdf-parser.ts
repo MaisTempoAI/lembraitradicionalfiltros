@@ -16,6 +16,10 @@ function normalizarTelefone(raw: string): string {
   // If it starts with 55 and has 12-13 digits, it's already with DDI
   if (digits.startsWith('55') && digits.length >= 12) return digits;
   // Add DDI 55 if not present and has 10-11 digits
+  // If 8-9 digits (no DDD), add default DDD 19
+  if (digits.length >= 8 && digits.length <= 9) {
+    digits = '19' + digits;
+  }
   if (digits.length >= 10 && digits.length <= 11) {
     digits = '55' + digits;
   }

@@ -17,6 +17,7 @@ import ProfilePage from "./pages/ProfilePage";
 import LoginPage from "./pages/LoginPage";
 import NotFound from "./pages/NotFound";
 import AgendaPage from "./pages/AgendaPage";
+import ImportPdfPage from "./pages/ImportPdfPage";
 import { ReactNode, useState, useEffect } from "react";
 import WhatsAppSetupDialog from "@/components/WhatsAppSetupDialog";
 
@@ -76,6 +77,7 @@ const router = createBrowserRouter([
   { path: "/novo", element: <ProtectedRoute><NewReminder /></ProtectedRoute> },
   { path: "/multiplo", element: <ProtectedRoute><MultipleReminderPage /></ProtectedRoute> },
   { path: "/agenda", element: <ProtectedRoute><AgendaPage /></ProtectedRoute> },
+  { path: "/importar-pdf", element: <ProtectedRoute><ImportPdfPage /></ProtectedRoute> },
   { path: "*", element: <ProtectedRoute><NotFound /></ProtectedRoute> },
 ]);
 

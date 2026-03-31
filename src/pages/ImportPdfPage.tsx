@@ -30,7 +30,7 @@ export default function ImportPdfPage() {
   const [mensagemTemplate, setMensagemTemplate] = useState('');
   const [dataContato, setDataContato] = useState(new Date().toISOString().split('T')[0]);
   const [horaEnvio, setHoraEnvio] = useState('10:10');
-  const [intervaloDias, setIntervaloDias] = useState(180);
+  const [intervaloDias, setIntervaloDias] = useState(0);
   const [criando, setCriando] = useState(false);
   const [progress, setProgress] = useState(0);
 
@@ -179,10 +179,6 @@ export default function ImportPdfPage() {
               <Input type="date" value={dataContato} onChange={e => setDataContato(e.target.value)} />
             </div>
             <div className="space-y-1.5">
-              <Label>Dias até envio</Label>
-              <Input type="number" value={intervaloDias} onChange={e => setIntervaloDias(Number(e.target.value))} min={1} />
-            </div>
-            <div className="space-y-1.5">
               <Label>Horário de Envio</Label>
               <div className="flex flex-wrap gap-1.5">
                 {HORARIOS_FIXOS.map(h => (
@@ -229,7 +225,6 @@ export default function ImportPdfPage() {
             </div>
           </div>
 
-          <ScrollArea className="max-h-[500px]">
             <div className="space-y-2">
               {clientes.map((cliente, index) => (
                 <div
@@ -285,7 +280,6 @@ export default function ImportPdfPage() {
                 </div>
               ))}
             </div>
-          </ScrollArea>
         </div>
 
         {/* Submit */}

@@ -153,7 +153,30 @@ export default function Dashboard() {
     <Layout>
       <div className="space-y-8">
         <div className="space-y-3">
-          <h1 className="text-4xl font-bold tracking-tight">Dashboard</h1>
+          <div className="flex items-center justify-between">
+            <h1 className="text-4xl font-bold tracking-tight">Dashboard</h1>
+            <div>
+              <input
+                ref={pdfInputRef}
+                type="file"
+                accept=".pdf"
+                className="hidden"
+                onChange={handlePdfImport}
+              />
+              <Button
+                size="lg"
+                className="gap-2"
+                onClick={() => pdfInputRef.current?.click()}
+                disabled={importingPdf}
+              >
+                {importingPdf ? (
+                  <><Loader2 className="h-4 w-4 animate-spin" /> Processando...</>
+                ) : (
+                  <><FileUp className="h-5 w-5" /> Importar PDF</>
+                )}
+              </Button>
+            </div>
+          </div>
           <div className="flex items-center gap-2">
             {filterMode !== 'personalizado' && (
               <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handlePrev}>

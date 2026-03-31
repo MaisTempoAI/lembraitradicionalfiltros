@@ -15,6 +15,10 @@ import { Calendar } from '@/components/ui/calendar';
 import { format, startOfMonth, endOfMonth, startOfYear, endOfYear, addMonths, subMonths, isWithinInterval, parseISO, addHours, isBefore, isAfter } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
+import { useNavigate } from 'react-router-dom';
+import { parsePdfVendas } from '@/lib/pdf-parser';
+import { toast } from 'sonner';
+import { useRef } from 'react';
 
 const chartColors = ['hsl(265, 60%, 55%)', 'hsl(152, 70%, 45%)', 'hsl(54, 90%, 60%)', 'hsl(15, 85%, 58%)', 'hsl(265, 45%, 65%)'];
 

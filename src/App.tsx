@@ -17,6 +17,7 @@ import ProfilePage from "./pages/ProfilePage";
 import LoginPage from "./pages/LoginPage";
 import NotFound from "./pages/NotFound";
 import AgendaPage from "./pages/AgendaPage";
+import ImportPdfPage from "./pages/ImportPdfPage";
 import { ReactNode, useState, useEffect } from "react";
 import WhatsAppSetupDialog from "@/components/WhatsAppSetupDialog";
 

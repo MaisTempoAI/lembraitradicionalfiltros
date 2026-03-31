@@ -6,7 +6,7 @@ import StatusBadge from '@/components/StatusBadge';
 import CategoryBadge from '@/components/CategoryBadge';
 import ReminderDetailModal from '@/components/ReminderDetailModal';
 import { useAllLembretes, useLembretes, LembreteRow } from '@/hooks/useLembretes';
-import { Clock, Send, AlertTriangle, Archive, Timer, Eye, ChevronLeft, ChevronRight, ChevronDown, CalendarIcon, FileUp } from 'lucide-react';
+import { Clock, Send, AlertTriangle, Archive, Timer, Eye, ChevronLeft, ChevronRight, ChevronDown, CalendarIcon, FileUp, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { Skeleton } from '@/components/ui/skeleton';

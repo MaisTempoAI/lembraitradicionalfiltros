@@ -225,7 +225,6 @@ export default function ImportPdfPage() {
             </div>
           </div>
 
-          <ScrollArea className="max-h-[500px]">
             <div className="space-y-2">
               {clientes.map((cliente, index) => (
                 <div

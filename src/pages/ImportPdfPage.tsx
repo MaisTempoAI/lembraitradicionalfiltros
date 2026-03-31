@@ -179,10 +179,6 @@ export default function ImportPdfPage() {
               <Input type="date" value={dataContato} onChange={e => setDataContato(e.target.value)} />
             </div>
             <div className="space-y-1.5">
-              <Label>Dias até envio</Label>
-              <Input type="number" value={intervaloDias} onChange={e => setIntervaloDias(Number(e.target.value))} min={1} />
-            </div>
-            <div className="space-y-1.5">
               <Label>Horário de Envio</Label>
               <div className="flex flex-wrap gap-1.5">
                 {HORARIOS_FIXOS.map(h => (

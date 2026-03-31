@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import Layout from '@/components/Layout';
 import StatsCard from '@/components/StatsCard';

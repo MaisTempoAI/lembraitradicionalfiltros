@@ -77,6 +77,7 @@ const router = createBrowserRouter([
   { path: "/novo", element: <ProtectedRoute><NewReminder /></ProtectedRoute> },
   { path: "/multiplo", element: <ProtectedRoute><MultipleReminderPage /></ProtectedRoute> },
   { path: "/agenda", element: <ProtectedRoute><AgendaPage /></ProtectedRoute> },
+  { path: "/importar-pdf", element: <ProtectedRoute><ImportPdfPage /></ProtectedRoute> },
   { path: "*", element: <ProtectedRoute><NotFound /></ProtectedRoute> },
 ]);
 

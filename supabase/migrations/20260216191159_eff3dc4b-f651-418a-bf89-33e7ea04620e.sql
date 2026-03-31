@@ -1,0 +1,1 @@
+ALTER TYPE lembrai_status ADD VALUE 'contato';

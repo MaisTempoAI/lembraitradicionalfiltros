@@ -1,0 +1,4 @@
+project_id = "cxgccrscaudkrkiiavcm"
+
+[functions.quepasa-connect]
+verify_jwt = false

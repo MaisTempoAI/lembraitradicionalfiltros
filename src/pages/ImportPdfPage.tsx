@@ -30,7 +30,7 @@ export default function ImportPdfPage() {
   const [mensagemTemplate, setMensagemTemplate] = useState('');
   const [dataContato, setDataContato] = useState(new Date().toISOString().split('T')[0]);
   const [horaEnvio, setHoraEnvio] = useState('10:10');
-  const [intervaloDias, setIntervaloDias] = useState(180);
+  const [intervaloDias, setIntervaloDias] = useState(0);
   const [criando, setCriando] = useState(false);
   const [progress, setProgress] = useState(0);
 

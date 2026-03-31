@@ -280,7 +280,6 @@ export default function ImportPdfPage() {
                 </div>
               ))}
             </div>
-          </ScrollArea>
         </div>
 
         {/* Submit */}

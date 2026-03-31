@@ -93,7 +93,7 @@ export async function parsePdfVendas(file: File): Promise<ClientePdf[]> {
     clientes.push({
       nome: entry.nome,
       telefone: entry.telefone,
-      itens: itens.length > 0 ? itens : ['Item não identificado'],
+      itens: itens.length > 0 ? itens : ['refil'],
       selecionado: entry.telefone.length > 0, // auto-select only those with phone
     });
   }

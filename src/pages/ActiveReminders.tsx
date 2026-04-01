@@ -86,6 +86,11 @@ export default function ActiveReminders() {
         if (dateFilter === 'semana') return isWithinInterval(d, { start: startOfWeek(now, { weekStartsOn: 1 }), end: endOfWeek(now, { weekStartsOn: 1 }) });
         if (dateFilter === 'mes') return isWithinInterval(d, { start: startOfMonth(now), end: endOfMonth(now) });
         return true;
+      })
+      .sort((a, b) => {
+        const cmp = a.data_contato.localeCompare(b.data_contato);
+        if (cmp !== 0) return cmp;
+        return a.hora_envio.localeCompare(b.hora_envio);
       });
   }, [allLembretes, search, statusFilter, catFilter, dateFilter]);
 

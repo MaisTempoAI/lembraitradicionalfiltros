@@ -74,14 +74,14 @@ export async function parsePdfVendas(file: File): Promise<ClientePdf[]> {
   
   for (let i = 0; i < entries.length; i++) {
     const entry = entries[i];
-    // Look for items between previous entry end and current entry position
-    const startPos = i > 0 ? entries[i - 1].position + entries[i - 1].nome.length + 20 : 0;
-    const endPos = entry.position;
+    // Look for items AFTER client's "Contato:" line, until the next client
+    const startPos = entry.position;
+    const endPos = i < entries.length - 1 ? entries[i + 1].position : fullText.length;
     const block = fullText.substring(startPos, endPos);
     
     const itens: string[] = [];
     let itemMatch;
-    const localItemRegex = /(\d{1,4})\s+((?:REFIL|VELA|ELEMENTO|CB\d|REFILHF)[A-ZÁÉÍÓÚÂÊÔÃÕÇÜa-záéíóúâêôãõçü0-9\s\.\-\+\/\"\'\(\)]*?)(?:\s+\d+[\.,]\d+)/g;
+    const localItemRegex = /(\d{1,4})\s+((?:REFIL|VELA\s*\w*|ELEMENTO|CB\d|REFILHF)[A-ZÁÉÍÓÚÂÊÔÃÕÇÜa-záéíóúâêôãõçü0-9\s\.\-\+\/\"\'\(\)]*?)(?:\s+\d+[\.,]\d+)/g;
     
     while ((itemMatch = localItemRegex.exec(block)) !== null) {
       const desc = itemMatch[2].trim();

@@ -1,25 +1,36 @@
 
 
-# Ordenar Lembretes Ativos por Data de Envio (mais próximo primeiro)
+# Fix PDF Item Extraction — Items Appear AFTER Client Name
 
-## Problema
-Atualmente os lembretes ativos são ordenados por `created_at DESC` (mais recente criado primeiro) via query do Supabase. O usuário quer ver ordenado pela **data de envio** (`data_contato`) do mais próximo ao mais distante — ou seja, ascending.
+## Problem
+The parser extracts items from the text block BEFORE each client's "Contato:" line. But the actual PDF layout shows items AFTER the client name:
 
-## Alteração
-
-### `src/pages/ActiveReminders.tsx`
-Adicionar `.sort()` no `useMemo` após os filtros, ordenando por `data_contato` ascending (e secundariamente por `hora_envio` ascending):
-
-```ts
-.sort((a, b) => {
-  const cmp = a.data_contato.localeCompare(b.data_contato);
-  if (cmp !== 0) return cmp;
-  return a.hora_envio.localeCompare(b.hora_envio);
-});
+```text
+GUSTAVO BIZZOTO              Contato: 99270.7420
+699  REFIL HF ELX PE12 PURE  1,00  37,50  90,00  52,50  139,99
+                              1,00  37,50  90,00  52,50  139,99
 ```
 
-Isso garante que o lembrete mais próximo de ser enviado aparece primeiro na lista.
+So GUSTAVO is incorrectly getting the item from the PREVIOUS client (GEORGIA MUNDIN's VELA ESTERILAQUA) instead of his own REFIL HF ELX PE12 PURE.
 
-### Arquivo modificado
-- `src/pages/ActiveReminders.tsx` — adicionar sort no useMemo
+## Fix
+
+### `src/lib/pdf-parser.ts` — Reverse item block direction
+
+Change the item extraction loop to look for items in the text block AFTER each client's "Contato:" position (between current entry's position and the NEXT entry's position), instead of before.
+
+```ts
+// CURRENT (wrong): items between previous entry and current entry
+const startPos = i > 0 ? entries[i-1].position ... : 0;
+const endPos = entry.position;
+
+// FIX: items between current entry and next entry
+const startPos = entry.position;
+const endPos = i < entries.length - 1 ? entries[i+1].position : fullText.length;
+```
+
+Also broaden the item regex to catch `VELA TRADICIONAL`, `VELA DECLORANTE`, and other product names that may not start with the current prefixes. Add `VELA\s\w+` as a broader match pattern.
+
+### Files modified
+- `src/lib/pdf-parser.ts` — reverse block direction for item extraction
 

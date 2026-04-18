@@ -1,36 +1,44 @@
 
+# Nova Tela de Login — Layout Dividido
 
-# Fix PDF Item Extraction — Items Appear AFTER Client Name
+## Mudanças em `src/pages/LoginPage.tsx`
 
-## Problem
-The parser extracts items from the text block BEFORE each client's "Contato:" line. But the actual PDF layout shows items AFTER the client name:
+Transformar o layout atual (centralizado) em um split-screen de 2 colunas, inspirado no mockup ERPOS mas usando a identidade visual do LEMBRA.ai.
+
+### Estrutura
 
 ```text
-GUSTAVO BIZZOTO              Contato: 99270.7420
-699  REFIL HF ELX PE12 PURE  1,00  37,50  90,00  52,50  139,99
-                              1,00  37,50  90,00  52,50  139,99
+┌─────────────────────┬─────────────────────┐
+│                     │                     │
+│   LADO ESQUERDO     │   LADO DIREITO      │
+│   (bg primary roxo) │   (bg muted claro)  │
+│                     │                     │
+│   [LOGO LEMBRA.ai]  │   Login             │
+│                     │   ┌──────────────┐  │
+│                     │   │ WhatsApp     │  │
+│                     │   │ [input]      │  │
+│                     │   │ Senha        │  │
+│                     │   │ [input]      │  │
+│                     │   │ [Entrar]     │  │
+│                     │   └──────────────┘  │
+│                     │                     │
+│   © LEMBRA.ai 2026  │   v1.0              │
+└─────────────────────┴─────────────────────┘
 ```
 
-So GUSTAVO is incorrectly getting the item from the PREVIOUS client (GEORGIA MUNDIN's VELA ESTERILAQUA) instead of his own REFIL HF ELX PE12 PURE.
+### Detalhes visuais
 
-## Fix
+- **Esquerda (50%)**: Fundo `bg-primary` (roxo escuro #474150 da identidade do projeto, NÃO laranja). Logo grande centralizado verticalmente com ícone `Bell` + texto "LEMBRA.ai" em branco. Footer com copyright em opacity reduzida.
+- **Direita (50%)**: Fundo `bg-muted` (off-white). Card branco centralizado com título "Login", inputs (WhatsApp, Senha), botão "Entrar" full-width, link "Não tem conta? Cadastre-se" abaixo. Versão "v1.0" no rodapé.
+- **Mobile (<md)**: Empilhado — header compacto roxo no topo com logo, formulário ocupa o resto da tela.
 
-### `src/lib/pdf-parser.ts` — Reverse item block direction
+### Logo
+Verificar se há logo em `src/assets/` ou `public/`. Se não houver imagem, usar o ícone `Bell` (lucide) + texto "LEMBRA.ai" como já está hoje, em tamanho grande (text-5xl).
 
-Change the item extraction loop to look for items in the text block AFTER each client's "Contato:" position (between current entry's position and the NEXT entry's position), instead of before.
+### Manter funcionalidades
+- Toggle login/signup (campo Nome aparece quando signup)
+- Validações e toasts existentes
+- Mesma lógica de `useAuth`
 
-```ts
-// CURRENT (wrong): items between previous entry and current entry
-const startPos = i > 0 ? entries[i-1].position ... : 0;
-const endPos = entry.position;
-
-// FIX: items between current entry and next entry
-const startPos = entry.position;
-const endPos = i < entries.length - 1 ? entries[i+1].position : fullText.length;
-```
-
-Also broaden the item regex to catch `VELA TRADICIONAL`, `VELA DECLORANTE`, and other product names that may not start with the current prefixes. Add `VELA\s\w+` as a broader match pattern.
-
-### Files modified
-- `src/lib/pdf-parser.ts` — reverse block direction for item extraction
-
+### Arquivo modificado
+- `src/pages/LoginPage.tsx` — reescrever layout para split-screen

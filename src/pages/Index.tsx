@@ -151,114 +151,93 @@ export default function Dashboard() {
 
   return (
     <Layout>
-      <div className="space-y-8">
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <h1 className="text-4xl font-bold tracking-tight">Dashboard</h1>
-            <div>
-              <input
-                ref={pdfInputRef}
-                type="file"
-                accept=".pdf"
-                className="hidden"
-                onChange={handlePdfImport}
-              />
-              <Button
-                size="lg"
-                className="gap-2"
-                onClick={() => pdfInputRef.current?.click()}
-                disabled={importingPdf}
-              >
-                {importingPdf ? (
-                  <><Loader2 className="h-4 w-4 animate-spin" /> Processando...</>
-                ) : (
-                  <><FileUp className="h-5 w-5" /> Importar PDF</>
-                )}
-              </Button>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            {filterMode !== 'personalizado' && (
-              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handlePrev}>
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-            )}
-            <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
-              <PopoverTrigger asChild>
-                <Button variant="outline" className="min-w-[200px] justify-center gap-2">
-                  {periodLabel}
-                  <ChevronDown className="h-3.5 w-3.5 opacity-50" />
+      <div className="space-y-6">
+        <div className="space-y-2">
+          <div className="flex items-center justify-between flex-wrap gap-3">
+            <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
+            <div className="flex items-center gap-2">
+              {filterMode !== 'personalizado' && (
+                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handlePrev}>
+                  <ChevronLeft className="h-4 w-4" />
                 </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-3 space-y-3" align="center">
-                <div className="flex gap-1">
-                  {(['mes', 'ano', 'personalizado'] as FilterMode[]).map(mode => (
-                    <Button
-                      key={mode}
-                      variant={filterMode === mode ? 'default' : 'ghost'}
-                      size="sm"
-                      className="flex-1 capitalize"
-                      onClick={() => {
-                        setFilterMode(mode);
-                        if (mode !== 'personalizado') setPopoverOpen(false);
-                      }}
-                    >
-                      {mode === 'mes' ? 'Mês' : mode === 'ano' ? 'Ano' : 'Personalizado'}
-                    </Button>
-                  ))}
-                </div>
-                {filterMode === 'personalizado' && (
-                  <div className="space-y-2">
-                    <div>
-                      <p className="text-xs text-muted-foreground mb-1">De</p>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button variant="outline" size="sm" className={cn("w-full justify-start text-left", !dateFrom && "text-muted-foreground")}>
-                            <CalendarIcon className="mr-2 h-3.5 w-3.5" />
-                            {dateFrom ? format(dateFrom, "dd/MM/yyyy") : "Selecionar"}
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                          <Calendar mode="single" selected={dateFrom} onSelect={setDateFrom} className="p-3 pointer-events-auto" />
-                        </PopoverContent>
-                      </Popover>
-                    </div>
-                    <div>
-                      <p className="text-xs text-muted-foreground mb-1">Até</p>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button variant="outline" size="sm" className={cn("w-full justify-start text-left", !dateTo && "text-muted-foreground")}>
-                            <CalendarIcon className="mr-2 h-3.5 w-3.5" />
-                            {dateTo ? format(dateTo, "dd/MM/yyyy") : "Selecionar"}
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                          <Calendar mode="single" selected={dateTo} onSelect={setDateTo} className="p-3 pointer-events-auto" />
-                        </PopoverContent>
-                      </Popover>
-                    </div>
+              )}
+              <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm" className="min-w-[180px] justify-center gap-2">
+                    {periodLabel}
+                    <ChevronDown className="h-3.5 w-3.5 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-3 space-y-3" align="end">
+                  <div className="flex gap-1">
+                    {(['mes', 'ano', 'personalizado'] as FilterMode[]).map(mode => (
+                      <Button
+                        key={mode}
+                        variant={filterMode === mode ? 'default' : 'ghost'}
+                        size="sm"
+                        className="flex-1 capitalize"
+                        onClick={() => {
+                          setFilterMode(mode);
+                          if (mode !== 'personalizado') setPopoverOpen(false);
+                        }}
+                      >
+                        {mode === 'mes' ? 'Mês' : mode === 'ano' ? 'Ano' : 'Personalizado'}
+                      </Button>
+                    ))}
                   </div>
-                )}
-              </PopoverContent>
-            </Popover>
-            {filterMode !== 'personalizado' && (
-              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleNext}>
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            )}
+                  {filterMode === 'personalizado' && (
+                    <div className="space-y-2">
+                      <div>
+                        <p className="text-xs text-muted-foreground mb-1">De</p>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button variant="outline" size="sm" className={cn("w-full justify-start text-left", !dateFrom && "text-muted-foreground")}>
+                              <CalendarIcon className="mr-2 h-3.5 w-3.5" />
+                              {dateFrom ? format(dateFrom, "dd/MM/yyyy") : "Selecionar"}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar mode="single" selected={dateFrom} onSelect={setDateFrom} className="p-3 pointer-events-auto" />
+                          </PopoverContent>
+                        </Popover>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground mb-1">Até</p>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button variant="outline" size="sm" className={cn("w-full justify-start text-left", !dateTo && "text-muted-foreground")}>
+                              <CalendarIcon className="mr-2 h-3.5 w-3.5" />
+                              {dateTo ? format(dateTo, "dd/MM/yyyy") : "Selecionar"}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar mode="single" selected={dateTo} onSelect={setDateTo} className="p-3 pointer-events-auto" />
+                          </PopoverContent>
+                        </Popover>
+                      </div>
+                    </div>
+                  )}
+                </PopoverContent>
+              </Popover>
+              {filterMode !== 'personalizado' && (
+                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleNext}>
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
           {isLoading ? (
-            Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-24 rounded-xl" />)
+            Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-20 rounded-lg" />)
           ) : (
             <>
-              <StatsCard title="Aguardando" value={stats.total_aguardando} icon={<Clock className="h-5 w-5" />} href="/ativos?status=aguardando" color="#9C99B8" />
-              <StatsCard title="Enviados" value={stats.total_enviados} icon={<Send className="h-5 w-5" />} description={periodDescription} href="/finalizados?status=enviado" color="#2E9B6E" />
-              <StatsCard title="Próximos 24h" value={stats.proximos_24h} icon={<Timer className="h-5 w-5" />} href="/ativos?status=aguardando" color="#FFBB00" />
-              <StatsCard title="Erros" value={stats.total_erros} icon={<AlertTriangle className="h-5 w-5" />} description={periodDescription} href="/ativos?status=erro" color="#E0603E" />
-              <StatsCard title="Arquivados" value={stats.total_arquivados} icon={<Archive className="h-5 w-5" />} description="Total" href="/arquivados" color="#474150" />
+              <StatsCard title="Aguardando" value={stats.total_aguardando} icon={<Clock className="h-4 w-4" />} href="/ativos?status=aguardando" color="#9C99B8" />
+              <StatsCard title="Enviados" value={stats.total_enviados} icon={<Send className="h-4 w-4" />} description={periodDescription} href="/finalizados?status=enviado" color="#2E9B6E" />
+              <StatsCard title="Próximos 24h" value={stats.proximos_24h} icon={<Timer className="h-4 w-4" />} href="/ativos?status=aguardando" color="#FFBB00" />
+              <StatsCard title="Erros" value={stats.total_erros} icon={<AlertTriangle className="h-4 w-4" />} description={periodDescription} href="/ativos?status=erro" color="#E0603E" />
+              <StatsCard title="Arquivados" value={stats.total_arquivados} icon={<Archive className="h-4 w-4" />} description="Total" href="/arquivados" color="#474150" />
             </>
           )}
         </div>

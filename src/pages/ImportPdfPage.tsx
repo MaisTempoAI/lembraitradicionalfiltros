@@ -329,7 +329,65 @@ export default function ImportPdfPage() {
     }
   };
 
-  if (clientes.length === 0) return null;
+  if (clientes.length === 0) {
+    return (
+      <Layout>
+        <div className="max-w-2xl mx-auto space-y-6">
+          <div className="flex items-center gap-3">
+            <Button variant="ghost" size="icon" onClick={() => navigate('/')} className="shrink-0">
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight">Importar PDF</h1>
+              <p className="text-muted-foreground text-sm">Envie o relatório de vendas para extrair contatos automaticamente</p>
+            </div>
+          </div>
+
+          <label
+            htmlFor="pdf-upload-input"
+            className={cn(
+              "block rounded-xl border-2 border-dashed bg-card p-10 text-center cursor-pointer transition-colors",
+              uploadingPdf ? "opacity-60 cursor-wait" : "hover:border-primary hover:bg-primary/5"
+            )}
+          >
+            <input
+              id="pdf-upload-input"
+              type="file"
+              accept="application/pdf,.pdf"
+              className="hidden"
+              onChange={handlePdfUpload}
+              disabled={uploadingPdf}
+            />
+            <div className="flex flex-col items-center gap-3">
+              {uploadingPdf ? (
+                <>
+                  <Loader2 className="h-10 w-10 text-primary animate-spin" />
+                  <p className="font-medium">Lendo PDF...</p>
+                  <p className="text-sm text-muted-foreground">Isso pode levar alguns segundos</p>
+                </>
+              ) : (
+                <>
+                  <div className="h-14 w-14 rounded-full bg-primary/10 flex items-center justify-center">
+                    <FileUp className="h-7 w-7 text-primary" />
+                  </div>
+                  <p className="font-medium">Clique para selecionar um PDF</p>
+                  <p className="text-sm text-muted-foreground">Relatório de vendas com lista de clientes</p>
+                  <Button type="button" variant="outline" size="sm" className="mt-2 pointer-events-none">
+                    Selecionar arquivo
+                  </Button>
+                </>
+              )}
+            </div>
+          </label>
+
+          <p className="text-xs text-muted-foreground text-center">
+            Aceita os layouts antigos (código antes do item) e novos (código depois do item).
+          </p>
+        </div>
+      </Layout>
+    );
+  }
+
 
   return (
     <Layout>

@@ -14,10 +14,10 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { ArrowLeft, Loader2, AlertTriangle, Phone, User, Package, CheckSquare, Square, Send, UserPlus } from 'lucide-react';
+import { ArrowLeft, Loader2, AlertTriangle, Phone, User, Package, CheckSquare, Square, Send, UserPlus, FileUp } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
-import type { ClientePdf } from '@/lib/pdf-parser';
+import { parsePdfVendas, type ClientePdf } from '@/lib/pdf-parser';
 
 const HORARIOS_FIXOS = ['10:10', '13:13', '17:17'];
 const MAX_POR_HORARIO = 10;
@@ -96,6 +96,7 @@ export default function ImportPdfPage() {
   const [importandoContatos, setImportandoContatos] = useState(false);
   const [contatosImportados, setContatosImportados] = useState(0);
   const [contatosExistentes, setContatosExistentes] = useState(0);
+  const [uploadingPdf, setUploadingPdf] = useState(false);
 
   // Editable agenda overrides: slotIndex -> {data, hora}
   const [agendaOverrides, setAgendaOverrides] = useState<Map<number, { data: string; hora: string }>>(new Map());
@@ -118,13 +119,31 @@ export default function ImportPdfPage() {
     }
   }, [categoriaId, categorias]);
 
-  // Redirect if no data
-  useEffect(() => {
-    if (clientesFromState.length === 0) {
-      navigate('/');
-      toast.error('Nenhum dado de PDF encontrado.');
+  const handlePdfUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.type !== 'application/pdf') {
+      toast.error('Selecione um arquivo PDF.');
+      return;
     }
-  }, [clientesFromState, navigate]);
+    setUploadingPdf(true);
+    try {
+      const parsed = await parsePdfVendas(file);
+      if (parsed.length === 0) {
+        toast.error('Nenhum cliente encontrado no PDF.');
+        return;
+      }
+      toast.success(`${parsed.length} clientes encontrados!`);
+      setClientes(parsed);
+    } catch (err) {
+      console.error(err);
+      toast.error('Erro ao processar PDF. Tente outro arquivo.');
+    } finally {
+      setUploadingPdf(false);
+      e.target.value = '';
+    }
+  };
+
 
   const toggleCliente = (index: number) => {
     setClientes(prev => prev.map((c, i) => i === index ? { ...c, selecionado: !c.selecionado } : c));

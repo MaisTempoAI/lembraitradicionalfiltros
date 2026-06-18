@@ -6,7 +6,7 @@ import StatusBadge from '@/components/StatusBadge';
 import CategoryBadge from '@/components/CategoryBadge';
 import ReminderDetailModal from '@/components/ReminderDetailModal';
 import { useAllLembretes, useLembretes, LembreteRow } from '@/hooks/useLembretes';
-import { Clock, Send, AlertTriangle, Archive, Timer, Eye, ChevronLeft, ChevronRight, ChevronDown, CalendarIcon, FileUp, Loader2 } from 'lucide-react';
+import { Clock, Send, AlertTriangle, Archive, Timer, Eye, ChevronLeft, ChevronRight, ChevronDown, CalendarIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -15,10 +15,6 @@ import { Calendar } from '@/components/ui/calendar';
 import { format, startOfMonth, endOfMonth, startOfYear, endOfYear, addMonths, subMonths, isWithinInterval, parseISO, addHours, isBefore, isAfter } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
-import { useNavigate } from 'react-router-dom';
-import { parsePdfVendas } from '@/lib/pdf-parser';
-import { toast } from 'sonner';
-import { useRef } from 'react';
 
 const chartColors = ['hsl(265, 60%, 55%)', 'hsl(152, 70%, 45%)', 'hsl(54, 90%, 60%)', 'hsl(15, 85%, 58%)', 'hsl(265, 45%, 65%)'];
 
@@ -31,34 +27,7 @@ export default function Dashboard() {
   const [dateFrom, setDateFrom] = useState<Date | undefined>();
   const [dateTo, setDateTo] = useState<Date | undefined>();
   const [popoverOpen, setPopoverOpen] = useState(false);
-  const [importingPdf, setImportingPdf] = useState(false);
-  const pdfInputRef = useRef<HTMLInputElement>(null);
-  const navigate = useNavigate();
 
-  const handlePdfImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (file.type !== 'application/pdf') {
-      toast.error('Selecione um arquivo PDF.');
-      return;
-    }
-    setImportingPdf(true);
-    try {
-      const clientes = await parsePdfVendas(file);
-      if (clientes.length === 0) {
-        toast.error('Nenhum cliente encontrado no PDF.');
-        return;
-      }
-      toast.success(`${clientes.length} clientes encontrados!`);
-      navigate('/importar-pdf', { state: { clientes } });
-    } catch (err) {
-      toast.error('Erro ao processar PDF.');
-      console.error(err);
-    } finally {
-      setImportingPdf(false);
-      e.target.value = '';
-    }
-  };
 
   const { data: allLembretes = [], isLoading: allLoading } = useAllLembretes();
   const { data: aguardando = [], isLoading: aguardandoLoading } = useLembretes(['aguardando']);

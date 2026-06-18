@@ -1,6 +1,5 @@
-import { Bell, LayoutDashboard, Inbox, CheckCircle2, Archive, CalendarDays, Settings, Users, Plus, FileUp, LogOut, Moon, Sun, User } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import { useRef, useState, useEffect } from 'react';
+import { Bell, LayoutDashboard, Inbox, CheckCircle2, Archive, CalendarDays, Settings, Users, Plus, FileUp, LogOut, Moon, Sun } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import { NavLink } from '@/components/NavLink';
 import {
   Sidebar,
@@ -15,10 +14,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from '@/components/ui/sidebar';
-import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
-import { parsePdfVendas } from '@/lib/pdf-parser';
-import { toast } from 'sonner';
 
 const navItems = [
   { title: 'Dashboard', url: '/', icon: LayoutDashboard, end: true },
@@ -36,40 +32,12 @@ const gestaoItems = [
 export default function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === 'collapsed';
-  const navigate = useNavigate();
   const { user, logout } = useAuth();
-  const pdfInputRef = useRef<HTMLInputElement>(null);
-  const [importing, setImporting] = useState(false);
   const [dark, setDark] = useState(() => document.documentElement.classList.contains('dark'));
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', dark);
   }, [dark]);
-
-  const handlePdfImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (file.type !== 'application/pdf') {
-      toast.error('Selecione um arquivo PDF.');
-      return;
-    }
-    setImporting(true);
-    try {
-      const clientes = await parsePdfVendas(file);
-      if (clientes.length === 0) {
-        toast.error('Nenhum cliente encontrado no PDF.');
-        return;
-      }
-      toast.success(`${clientes.length} clientes encontrados!`);
-      navigate('/importar-pdf', { state: { clientes } });
-    } catch (err) {
-      toast.error('Erro ao processar PDF.');
-      console.error(err);
-    } finally {
-      setImporting(false);
-      e.target.value = '';
-    }
-  };
 
   const linkBase = 'flex items-center gap-3 rounded-md px-2 py-2 text-sm transition-colors';
   const linkInactive = 'text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground';
@@ -126,19 +94,14 @@ export default function AppSidebar() {
         <SidebarGroup>
           {!collapsed && <SidebarGroupLabel className="text-[10px] uppercase tracking-wider text-sidebar-foreground/50">Ações</SidebarGroupLabel>}
           <SidebarGroupContent className="space-y-1">
-            <input ref={pdfInputRef} type="file" accept=".pdf" className="hidden" onChange={handlePdfImport} />
             <NavLink to="/novo" className={linkBase + ' ' + 'bg-primary text-primary-foreground hover:bg-primary/90 font-medium'}>
               <Plus className="h-4 w-4 shrink-0" />
               {!collapsed && <span>Novo Lembrete</span>}
             </NavLink>
-            <button
-              onClick={() => pdfInputRef.current?.click()}
-              disabled={importing}
-              className={linkBase + ' ' + linkInactive + ' w-full disabled:opacity-50'}
-            >
+            <NavLink to="/importar-pdf" className={linkBase + ' ' + linkInactive} activeClassName={linkActive}>
               <FileUp className="h-4 w-4 shrink-0" />
-              {!collapsed && <span>{importing ? 'Processando...' : 'Importar PDF'}</span>}
-            </button>
+              {!collapsed && <span>Importar PDF</span>}
+            </NavLink>
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>

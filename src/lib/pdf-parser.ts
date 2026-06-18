@@ -67,34 +67,59 @@ export async function parsePdfVendas(file: File): Promise<ClientePdf[]> {
     });
   }
 
-  // Now extract items for each client
-  // Items appear BEFORE the client name in the text
-  // Pattern: CODE DESCRIPTION QTY COST PRICE PROFIT MARGIN
-  const itemRegex = /(\d{1,4})\s+((?:REFIL|VELA|ELEMENTO|CB\d|REFILHF)[^\d]*?)(?:\s+\d+[\.,]\d+){4,}/g;
-  
+  // Two known layouts:
+  //   Layout A (antigo - OUT.25): CODIGO  DESCRIÇÃO  qty  v1  v2  v3  v4
+  //   Layout B (novo  - Jan.26):  DESCRIÇÃO  qty  v1  v2  v3  CODIGO  v4
+  const descClass = "[A-Z0-9ÁÉÍÓÚÂÊÔÃÕÇÜa-záéíóúâêôãõçü\\s\\.\\-\\+\\/\"'\\(\\)]";
+  const itemPrefix = "(?:REFIL|VELA|ELEMENTO|CB\\d|REFILHF)";
+  const num = "\\d+[\\.,]\\d+";
+
+  // Layout A: código antes da descrição
+  const reCodigoAntes = new RegExp(
+    `\\b\\d{1,4}\\s+(${itemPrefix}${descClass}{1,80}?)(?:\\s+${num}){4,}`,
+    'g'
+  );
+  // Layout B: código aparece entre os números (após qty + 3 valores)
+  const reCodigoDepois = new RegExp(
+    `\\b(${itemPrefix}${descClass}{1,80}?)\\s+${num}\\s+${num}\\s+${num}\\s+${num}\\s+\\d{1,4}\\s+${num}`,
+    'g'
+  );
+
+  const normalizeDesc = (s: string) =>
+    s.replace(/\s+/g, ' ').replace(/\s+\d+[\.,]\d+\s*$/, '').trim();
+
   for (let i = 0; i < entries.length; i++) {
     const entry = entries[i];
-    // Look for items AFTER client's "Contato:" line, until the next client
     const startPos = entry.position;
     const endPos = i < entries.length - 1 ? entries[i + 1].position : fullText.length;
     const block = fullText.substring(startPos, endPos);
-    
+
+    const seen = new Set<string>();
     const itens: string[] = [];
-    let itemMatch;
-    const localItemRegex = /(\d{1,4})\s+((?:REFIL|VELA\s*\w*|ELEMENTO|CB\d|REFILHF)[A-ZÁÉÍÓÚÂÊÔÃÕÇÜa-záéíóúâêôãõçü0-9\s\.\-\+\/\"\'\(\)]*?)(?:\s+\d+[\.,]\d+)/g;
-    
-    while ((itemMatch = localItemRegex.exec(block)) !== null) {
-      const desc = itemMatch[2].trim();
-      if (desc.length > 3) {
-        itens.push(desc);
+
+    const collect = (re: RegExp) => {
+      re.lastIndex = 0;
+      let m;
+      while ((m = re.exec(block)) !== null) {
+        const desc = normalizeDesc(m[1]);
+        if (desc.length > 3) {
+          const key = desc.toUpperCase();
+          if (!seen.has(key)) {
+            seen.add(key);
+            itens.push(desc);
+          }
+        }
       }
-    }
-    
+    };
+
+    collect(reCodigoAntes);
+    collect(reCodigoDepois);
+
     clientes.push({
       nome: entry.nome,
       telefone: entry.telefone,
       itens: itens.length > 0 ? itens : ['refil'],
-      selecionado: entry.telefone.length > 0, // auto-select only those with phone
+      selecionado: entry.telefone.length > 0,
     });
   }
 

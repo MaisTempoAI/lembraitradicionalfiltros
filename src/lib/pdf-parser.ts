@@ -129,11 +129,14 @@ export async function parsePdfVendas(file: File): Promise<ClientePdf[]> {
     collect(reCodigoAntes);
     collect(reCodigoDepois);
 
+    const celular = isCelularValido(entry.telefone);
+
     clientes.push({
       nome: entry.nome,
       telefone: entry.telefone,
       itens: itens.length > 0 ? itens : ['refil'],
-      selecionado: entry.telefone.length > 0,
+      selecionado: celular,
+      telefoneFixo: entry.telefone.length > 0 && !celular,
     });
   }
 

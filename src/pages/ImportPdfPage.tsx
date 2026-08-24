@@ -17,7 +17,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { ArrowLeft, Loader2, AlertTriangle, Phone, User, Package, CheckSquare, Square, Send, UserPlus, FileUp } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
-import { parsePdfVendas, type ClientePdf } from '@/lib/pdf-parser';
+import { parsePdfVendas, isCelularValido, type ClientePdf } from '@/lib/pdf-parser';
 
 const HORARIOS_FIXOS = ['10:10', '13:13', '17:17'];
 const MAX_POR_HORARIO = 10;
@@ -150,7 +150,7 @@ export default function ImportPdfPage() {
   };
 
   const selecionarTodos = () => {
-    setClientes(prev => prev.map(c => ({ ...c, selecionado: c.telefone.length > 0 })));
+    setClientes(prev => prev.map(c => ({ ...c, selecionado: isCelularValido(c.telefone) })));
   };
 
   const desmarcarTodos = () => {
@@ -158,16 +158,27 @@ export default function ImportPdfPage() {
   };
 
   const updateTelefone = (index: number, value: string) => {
-    setClientes(prev => prev.map((c, i) => i === index ? { ...c, telefone: value } : c));
+    setClientes(prev => prev.map((c, i) => {
+      if (i !== index) return c;
+      const celular = isCelularValido(value);
+      return {
+        ...c,
+        telefone: value,
+        telefoneFixo: value.trim().length > 0 && !celular,
+        selecionado: c.selecionado && celular,
+      };
+    }));
   };
 
   const updateItens = (index: number, value: string) => {
     setClientes(prev => prev.map((c, i) => i === index ? { ...c, itens: [value] } : c));
   };
 
-  const selecionados = clientes.filter(c => c.selecionado);
-  const clientesComTelefone = clientes.filter(c => c.telefone.length >= 10);
+  const selecionados = clientes.filter(c => c.selecionado && isCelularValido(c.telefone));
+  const clientesComTelefone = clientes.filter(c => isCelularValido(c.telefone));
   const semTelefone = clientes.filter(c => !c.telefone);
+  const fixos = clientes.filter(c => c.telefone && !isCelularValido(c.telefone));
+
 
   const gerarMensagem = (cliente: ClientePdf) => {
     let msg = mensagemTemplate || 'Olá [NOME], seu [ITEM] está na hora de trocar!';
@@ -178,7 +189,7 @@ export default function ImportPdfPage() {
   };
 
   // Agenda preview
-  const clientesValidos = useMemo(() => selecionados.filter(c => c.telefone.length >= 10), [selecionados]);
+  const clientesValidos = useMemo(() => selecionados.filter(c => isCelularValido(c.telefone)), [selecionados]);
   const agendaBase = useMemo(() => gerarAgendaDistribuida(clientesValidos.length, dataContato), [clientesValidos.length, dataContato]);
 
   // Build resumo from base agenda, then apply overrides
@@ -228,9 +239,9 @@ export default function ImportPdfPage() {
 
   const handleImportarContatos = async () => {
     if (!user) return;
-    const comTelefone = clientes.filter(c => c.telefone.length >= 10);
+    const comTelefone = clientes.filter(c => isCelularValido(c.telefone));
     if (comTelefone.length === 0) {
-      toast.error('Nenhum cliente com telefone válido.');
+      toast.error('Nenhum cliente com celular válido (WhatsApp).');
       return;
     }
 
@@ -405,6 +416,9 @@ export default function ImportPdfPage() {
                 {semTelefone.length > 0 && (
                   <span className="text-destructive ml-2">· {semTelefone.length} sem telefone</span>
                 )}
+                {fixos.length > 0 && (
+                  <span className="text-amber-600 dark:text-amber-500 ml-2">· {fixos.length} fixos (sem WhatsApp)</span>
+                )}
               </p>
             </div>
           </div>
@@ -512,12 +526,13 @@ export default function ImportPdfPage() {
                 key={index}
                 className={`rounded-lg border p-3 transition-colors ${
                   cliente.selecionado ? 'bg-primary/5 border-primary/20' : 'bg-muted/30'
-                } ${!cliente.telefone ? 'opacity-70' : ''}`}
+                } ${!isCelularValido(cliente.telefone) ? 'opacity-70' : ''}`}
               >
                 <div className="flex items-start gap-3">
                   <Checkbox
                     checked={cliente.selecionado}
                     onCheckedChange={() => toggleCliente(index)}
+                    disabled={!isCelularValido(cliente.telefone)}
                     className="mt-1"
                   />
                   <div className="flex-1 min-w-0 space-y-2">
@@ -527,6 +542,11 @@ export default function ImportPdfPage() {
                       {!cliente.telefone && (
                         <Badge variant="destructive" className="text-xs gap-1">
                           <AlertTriangle className="h-3 w-3" /> Sem telefone
+                        </Badge>
+                      )}
+                      {cliente.telefone && !isCelularValido(cliente.telefone) && (
+                        <Badge variant="outline" className="text-xs gap-1 border-amber-500 text-amber-600 dark:text-amber-500">
+                          <AlertTriangle className="h-3 w-3" /> Fixo — sem WhatsApp
                         </Badge>
                       )}
                     </div>

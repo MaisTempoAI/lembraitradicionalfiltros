@@ -416,6 +416,9 @@ export default function ImportPdfPage() {
                 {semTelefone.length > 0 && (
                   <span className="text-destructive ml-2">· {semTelefone.length} sem telefone</span>
                 )}
+                {fixos.length > 0 && (
+                  <span className="text-amber-600 dark:text-amber-500 ml-2">· {fixos.length} fixos (sem WhatsApp)</span>
+                )}
               </p>
             </div>
           </div>

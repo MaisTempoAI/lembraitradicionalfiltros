@@ -239,9 +239,9 @@ export default function ImportPdfPage() {
 
   const handleImportarContatos = async () => {
     if (!user) return;
-    const comTelefone = clientes.filter(c => c.telefone.length >= 10);
+    const comTelefone = clientes.filter(c => isCelularValido(c.telefone));
     if (comTelefone.length === 0) {
-      toast.error('Nenhum cliente com telefone válido.');
+      toast.error('Nenhum cliente com celular válido (WhatsApp).');
       return;
     }
 

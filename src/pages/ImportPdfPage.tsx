@@ -526,12 +526,13 @@ export default function ImportPdfPage() {
                 key={index}
                 className={`rounded-lg border p-3 transition-colors ${
                   cliente.selecionado ? 'bg-primary/5 border-primary/20' : 'bg-muted/30'
-                } ${!cliente.telefone ? 'opacity-70' : ''}`}
+                } ${!isCelularValido(cliente.telefone) ? 'opacity-70' : ''}`}
               >
                 <div className="flex items-start gap-3">
                   <Checkbox
                     checked={cliente.selecionado}
                     onCheckedChange={() => toggleCliente(index)}
+                    disabled={!isCelularValido(cliente.telefone)}
                     className="mt-1"
                   />
                   <div className="flex-1 min-w-0 space-y-2">
@@ -541,6 +542,11 @@ export default function ImportPdfPage() {
                       {!cliente.telefone && (
                         <Badge variant="destructive" className="text-xs gap-1">
                           <AlertTriangle className="h-3 w-3" /> Sem telefone
+                        </Badge>
+                      )}
+                      {cliente.telefone && !isCelularValido(cliente.telefone) && (
+                        <Badge variant="outline" className="text-xs gap-1 border-amber-500 text-amber-600 dark:text-amber-500">
+                          <AlertTriangle className="h-3 w-3" /> Fixo — sem WhatsApp
                         </Badge>
                       )}
                     </div>

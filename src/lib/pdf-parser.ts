@@ -8,6 +8,19 @@ export interface ClientePdf {
   telefone: string;
   itens: string[];
   selecionado: boolean;
+  telefoneFixo: boolean;
+}
+
+/**
+ * Retorna true apenas para celulares (WhatsApp).
+ * Telefones fixos (8 dígitos, ou DDD + 8 dígitos) retornam false.
+ */
+export function isCelularValido(raw: string): boolean {
+  const digits = (raw || '').replace(/\D/g, '');
+  const local = digits.startsWith('55') && digits.length >= 12 ? digits.slice(2) : digits;
+  if (local.length === 11) return local[2] === '9';
+  if (local.length === 9) return local[0] === '9';
+  return false; // 8 dígitos ou DDD + 8 dígitos = fixo
 }
 
 function normalizarTelefone(raw: string): string {
@@ -25,6 +38,7 @@ function normalizarTelefone(raw: string): string {
   }
   return digits;
 }
+
 
 export async function parsePdfVendas(file: File): Promise<ClientePdf[]> {
   const arrayBuffer = await file.arrayBuffer();

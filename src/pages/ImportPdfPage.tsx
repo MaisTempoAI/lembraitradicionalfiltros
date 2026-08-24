@@ -189,7 +189,7 @@ export default function ImportPdfPage() {
   };
 
   // Agenda preview
-  const clientesValidos = useMemo(() => selecionados.filter(c => c.telefone.length >= 10), [selecionados]);
+  const clientesValidos = useMemo(() => selecionados.filter(c => isCelularValido(c.telefone)), [selecionados]);
   const agendaBase = useMemo(() => gerarAgendaDistribuida(clientesValidos.length, dataContato), [clientesValidos.length, dataContato]);
 
   // Build resumo from base agenda, then apply overrides

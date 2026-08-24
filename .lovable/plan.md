@@ -1,80 +1,34 @@
-# Fix Importação de PDF — Suporte aos 2 layouts + UX robusta
+# Ignorar telefones fixos na importação de PDF
 
-## Diagnóstico
+## Problema
 
-Testando `Lista_Jan.26_-_Filtros.pdf` no parser atual:
-
-- `parsePdfVendas` encontra **70 clientes** corretamente (regex de `Contato:` funciona nos dois layouts).
-- Mas o pdf.js extrai o texto numa **ordem de colunas diferente** do PDF antigo. Compare:
-
-```text
-# Layout ANTIGO (OUT.25) — código ANTES da descrição
-699  REFIL HF ELX PE12 PURE  1,00  37,50  90,00  52,50  139,99
-
-# Layout NOVO (Jan.26) — código DEPOIS da descrição, no meio dos números
-REFIL IBBL C+5   1,00   42,84   98,00   128,73 650   55,16
-VELA TRADICIONAL 3,00   21,82   37,11   70,08 3   15,29
-```
-
-O regex atual exige `CODIGO + DESCRIÇÃO + 4 números` (layout antigo), então no PDF novo **nenhum item é extraído** e tudo cai no fallback `'refil'`.
-
-Além disso, "carrega, trava e volta pra tela principal" tem causa adicional:
-- Qualquer navegação direta a `/importar-pdf` (sidebar, F5, back/forward) cai no `useEffect` que faz `navigate('/')` quando `location.state` está vazio. O usuário vê toast "Nenhum dado de PDF encontrado" e é jogado pra home.
+No PDF `VENDA_REFIL_FEV-MAR.26.pdf` há 5 contatos com telefone fixo de 8 dígitos
+(ex.: `3935.9377`, `3875.7555`, `2660.0630`, `3825.8801/8812`). Hoje o parser
+adiciona DDD 19 e gera `1939359377`, um número sem WhatsApp — o envio falharia.
 
 ## Solução
 
-### 1. `src/lib/pdf-parser.ts` — aceitar AMBOS os layouts
+### 1. `src/lib/pdf-parser.ts`
 
-Manter o regex antigo e adicionar um segundo regex pro layout novo. Rodar os dois sobre o bloco do cliente, somar resultados e deduplicar.
+- Ao normalizar, detectar celular: número com 9 dígitos começando em `9` (ou 11 dígitos
+  com o 9 após o DDD). Números de 8 dígitos, ou de 9/10 dígitos cujo primeiro dígito do
+  assinante seja 2–5, são **fixos**.
+- Adicionar campo `telefoneFixo: boolean` em `ClientePdf`.
+- Quando for fixo: manter o número visível (para o usuário poder corrigir manualmente),
+  marcar `telefoneFixo: true` e `selecionado: false`.
+- Caso `3825.8801/8812`: continua pegando apenas o primeiro número; como é fixo, fica
+  desmarcado de qualquer forma.
 
-```ts
-// Layout 1 (antigo): CÓDIGO  DESCRIÇÃO  num num num num
-const reCodigoAntes = /(\d{1,4})\s+((?:REFIL|VELA|ELEMENTO|CB\d|REFILHF)[A-Z0-9ÁÉÍÓÚÂÊÔÃÕÇÜa-záéíóúâêôãõçü\s\.\-\+\/"'\(\)]*?)(?:\s+\d+[\.,]\d+){4}/g;
+### 2. `src/pages/ImportPdfPage.tsx`
 
-// Layout 2 (novo): DESCRIÇÃO  num num num num CÓDIGO  num
-//   capturamos apenas a descrição; ignoramos código que aparece entre números
-const reCodigoDepois = /\b((?:REFIL|VELA|ELEMENTO|CB\d|REFILHF)[A-Z0-9ÁÉÍÓÚÂÊÔÃÕÇÜa-záéíóúâêôãõçü\s\.\-\+\/"'\(\)]{2,60}?)\s+\d+[,.]\d+\s+\d+[,.]\d+\s+\d+[,.]\d+\s+\d+[,.]\d+\s+\d{1,4}\s+\d+[,.]\d+/g;
-```
-
-Lógica:
-1. Para cada bloco de cliente, aplicar **os dois regex**.
-2. Normalizar descrição (`trim`, colapsar espaços, remover lixo final tipo "1,00").
-3. Deduplicar via `Set` mantendo ordem.
-4. Fallback `'refil'` se nenhum dos dois bater.
-
-### 2. `src/pages/ImportPdfPage.tsx` — página auto-suficiente
-
-Hoje a página depende de `location.state.clientes`. Se vazio → bounce pra `/`. Mudar pra:
-
-- **Sem dados**: renderizar um **card de upload** com `<input type="file" accept=".pdf">`, ícone, texto explicativo e botão "Selecionar PDF". Durante o parse, mostrar `Loader2` + texto "Lendo PDF... pode levar alguns segundos".
-- **Com dados** (vindos de `location.state` OU do upload local): UI atual de configuração + lista.
-- Em caso de erro de parsing, **permanecer na página** com mensagem específica + botão "Tentar outro arquivo". Sem redirect.
-- **Remover** o `useEffect` que faz `navigate('/')` quando vazio.
-
-### 3. `src/components/AppSidebar.tsx` — simplificar
-
-- Trocar o botão "Importar PDF" por um **`<NavLink to="/importar-pdf">`** simples.
-- Remover `pdfInputRef`, `handlePdfImport`, `importing` e o `<input>` escondido (toda a lógica vai pra `ImportPdfPage`).
-
-### 4. `src/pages/Index.tsx` — limpar
-
-- Remover botão/handler de PDF do dashboard (`pdfInputRef`, `handlePdfImport`, `importingPdf` e imports `parsePdfVendas`/`FileUp`/`Loader2` se ficarem sem uso). Fluxo único: sidebar → `/importar-pdf`.
-
-### Fluxo final
-
-```text
-Sidebar "Importar PDF"  ─►  /importar-pdf
-                              │
-                              ├─ sem state  ──►  Card de upload  ─►  parsePdfVendas (loader)
-                              │                                          │
-                              │                                          ▼
-                              └─ com state  ──►  Configurações + Lista de clientes
-```
-
-Ambos os formatos de PDF (OUT.25 e Jan.26) caem no mesmo parser, que cobre os 2 layouts.
+- Na lista, exibir badge **"Fixo — sem WhatsApp"** (tom de alerta) no lugar do check,
+  igual ao tratamento de "sem telefone".
+- Resumo do topo passa a mostrar: `X encontrados · Y selecionados · Z sem telefone · W fixos`.
+- Botão **Importar Contatos** e a geração de lembretes ignoram os fixos (já ficam
+  desmarcados; garantir também no filtro para não entrarem em nenhum lote).
+- Se o usuário editar o número de um fixo para um celular válido, o item volta a ser
+  selecionável normalmente.
 
 ## Arquivos modificados
-- `src/lib/pdf-parser.ts` — adicionar regex pro layout "código depois", deduplicar itens
-- `src/pages/ImportPdfPage.tsx` — adicionar UI de upload + remover redirect
-- `src/components/AppSidebar.tsx` — virar link simples
-- `src/pages/Index.tsx` — remover botão/handler de PDF
+- `src/lib/pdf-parser.ts`
+- `src/pages/ImportPdfPage.tsx`

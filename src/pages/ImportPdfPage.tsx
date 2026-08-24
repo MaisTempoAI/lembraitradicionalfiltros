@@ -150,7 +150,7 @@ export default function ImportPdfPage() {
   };
 
   const selecionarTodos = () => {
-    setClientes(prev => prev.map(c => ({ ...c, selecionado: c.telefone.length > 0 })));
+    setClientes(prev => prev.map(c => ({ ...c, selecionado: isCelularValido(c.telefone) })));
   };
 
   const desmarcarTodos = () => {
@@ -158,16 +158,27 @@ export default function ImportPdfPage() {
   };
 
   const updateTelefone = (index: number, value: string) => {
-    setClientes(prev => prev.map((c, i) => i === index ? { ...c, telefone: value } : c));
+    setClientes(prev => prev.map((c, i) => {
+      if (i !== index) return c;
+      const celular = isCelularValido(value);
+      return {
+        ...c,
+        telefone: value,
+        telefoneFixo: value.trim().length > 0 && !celular,
+        selecionado: c.selecionado && celular,
+      };
+    }));
   };
 
   const updateItens = (index: number, value: string) => {
     setClientes(prev => prev.map((c, i) => i === index ? { ...c, itens: [value] } : c));
   };
 
-  const selecionados = clientes.filter(c => c.selecionado);
-  const clientesComTelefone = clientes.filter(c => c.telefone.length >= 10);
+  const selecionados = clientes.filter(c => c.selecionado && isCelularValido(c.telefone));
+  const clientesComTelefone = clientes.filter(c => isCelularValido(c.telefone));
   const semTelefone = clientes.filter(c => !c.telefone);
+  const fixos = clientes.filter(c => c.telefone && !isCelularValido(c.telefone));
+
 
   const gerarMensagem = (cliente: ClientePdf) => {
     let msg = mensagemTemplate || 'Olá [NOME], seu [ITEM] está na hora de trocar!';

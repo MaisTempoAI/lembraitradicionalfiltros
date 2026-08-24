@@ -17,7 +17,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { ArrowLeft, Loader2, AlertTriangle, Phone, User, Package, CheckSquare, Square, Send, UserPlus, FileUp } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
-import { parsePdfVendas, type ClientePdf } from '@/lib/pdf-parser';
+import { parsePdfVendas, isCelularValido, type ClientePdf } from '@/lib/pdf-parser';
 
 const HORARIOS_FIXOS = ['10:10', '13:13', '17:17'];
 const MAX_POR_HORARIO = 10;
